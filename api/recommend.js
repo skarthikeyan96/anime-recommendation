@@ -263,6 +263,17 @@ Respond ONLY with valid JSON array, no markdown, no preamble:
       }),
     );
 
+    const normalize = (s) => s.toLowerCase().replace(/[^a-z0-9]/g, "");
+    const watchedNorms = new Set([
+      ...watchedList.map(normalize),
+      ...validWatched.flatMap((a) =>
+        [a.title.english, a.title.romaji].filter(Boolean).map(normalize)
+      ),
+    ]);
+    const deduped = recommendations.filter(Boolean).filter((r) =>
+      !watchedNorms.has(normalize(r.title)) && !watchedNorms.has(normalize(r.titleJp))
+    );
+
     const profile = {
       topGenres,
       topTags: topTags.slice(0, 4),
@@ -275,7 +286,7 @@ Respond ONLY with valid JSON array, no markdown, no preamble:
 
     return new Response(
       JSON.stringify({
-        recommendations: recommendations.filter(Boolean),
+        recommendations: deduped,
         profile,
       }),
       {
