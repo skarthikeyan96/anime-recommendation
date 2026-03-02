@@ -1,6 +1,6 @@
 # AniRec — AI Anime Recommendations
 
-An AI-powered anime recommendation engine that analyzes your watching history and suggests what to binge next. Built with the AniList GraphQL API and Google Gemini 2.0 Flash, deployed as a Vercel Edge Function.
+An AI-powered anime recommendation engine that analyzes your watching history and suggests what to binge next. Built with the AniList GraphQL API and Google Gemini 2.5 Flash, deployed as a Vercel Edge Function.
 
 ## How It Works
 
@@ -8,7 +8,7 @@ An AI-powered anime recommendation engine that analyzes your watching history an
 2. **AniList API** fetches metadata — genres, tags, scores, studios
 3. A **taste profile** is built from your top genres and recurring themes
 4. **Candidate anime** matching your taste are pulled from AniList
-5. **Gemini 2.0 Flash** ranks the best picks and writes a personalized reason for each
+5. **Gemini 2.5 Flash** ranks the best picks and writes a personalized reason for each
 6. Results are displayed as rich cards with scores, episode counts, and direct AniList links
 
 ## Tech Stack
@@ -18,7 +18,7 @@ An AI-powered anime recommendation engine that analyzes your watching history an
 | Frontend | Vanilla HTML/CSS/JS with Space Grotesk + Bebas Neue typography |
 | Backend | Vercel Edge Function (serverless, ~0ms cold start) |
 | Anime Data | [AniList GraphQL API](https://anilist.gitbook.io/anilist-apiv2-docs/) |
-| AI | [Google Gemini 2.0 Flash](https://ai.google.dev/) |
+| AI | [Google Gemini 2.5 Flash](https://ai.google.dev/) |
 | Hosting | [Vercel](https://vercel.com) |
 
 ## Project Structure
