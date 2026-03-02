@@ -24,12 +24,12 @@ An AI-powered anime recommendation engine that analyzes your watching history an
 ## Project Structure
 
 ```
-animerec/
 ├── api/
 │   └── recommend.js    # Edge function — taste analysis + Gemini ranking
 ├── public/
 │   └── index.html      # Frontend — tag input, autocomplete, result cards
-└── vercel.json         # Routing config
+├── vercel.json         # Routing config
+└── README.md
 ```
 
 ## Getting Started
@@ -43,7 +43,6 @@ animerec/
 ### Deploy
 
 ```bash
-cd animerec
 vercel
 ```
 
@@ -63,7 +62,6 @@ vercel --prod
 ### Local Development
 
 ```bash
-cd animerec
 vercel dev
 ```
 
