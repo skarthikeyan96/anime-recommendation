@@ -273,15 +273,10 @@ Respond ONLY with valid JSON array, no markdown, no preamble:
       ),
     };
 
-    const debug = recommendations.filter(Boolean).length === 0
-      ? { candidateCount: candidates.length, picksCount: picks.length, rawGemini: rawText.slice(0, 500) }
-      : undefined;
-
     return new Response(
       JSON.stringify({
         recommendations: recommendations.filter(Boolean),
         profile,
-        ...(debug && { debug }),
       }),
       {
         status: 200,
