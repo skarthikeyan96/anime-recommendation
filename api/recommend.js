@@ -218,10 +218,19 @@ Respond ONLY with valid JSON array, no markdown, no preamble:
     );
 
     const geminiData = await geminiRes.json();
+
+    if (!geminiRes.ok) {
+      return new Response(
+        JSON.stringify({ error: "Gemini API error", detail: geminiData }),
+        { status: 502, headers: { "Content-Type": "application/json" } }
+      );
+    }
+
     const parts = geminiData.candidates?.[0]?.content?.parts || [];
     const responsePart = parts.filter((p) => !p.thought).pop();
     const rawText = responsePart?.text || "[]";
-    const clean = rawText.replace(/```json|```/g, "").trim();
+    const jsonMatch = rawText.match(/\[[\s\S]*\]/);
+    const clean = jsonMatch ? jsonMatch[0] : "[]";
     let picks;
     try {
       picks = JSON.parse(clean);
@@ -264,10 +273,15 @@ Respond ONLY with valid JSON array, no markdown, no preamble:
       ),
     };
 
+    const debug = recommendations.filter(Boolean).length === 0
+      ? { candidateCount: candidates.length, picksCount: picks.length, rawGemini: rawText.slice(0, 500) }
+      : undefined;
+
     return new Response(
       JSON.stringify({
         recommendations: recommendations.filter(Boolean),
         profile,
+        ...(debug && { debug }),
       }),
       {
         status: 200,
