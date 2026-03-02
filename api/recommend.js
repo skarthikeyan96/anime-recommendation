@@ -212,7 +212,7 @@ Respond ONLY with valid JSON array, no markdown, no preamble:
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           contents: [{ parts: [{ text: prompt }] }],
-          generationConfig: { temperature: 0.7, maxOutputTokens: 1024 },
+          generationConfig: { temperature: 0.7, maxOutputTokens: 8192, thinkingConfig: { thinkingBudget: 2048 } },
         }),
       },
     );
