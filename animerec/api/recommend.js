@@ -87,7 +87,10 @@ async function searchByGenres(genres, excludeIds, page = 1) {
   const res = await fetch(ANILIST, {
     method: "POST",
     headers: { "Content-Type": "application/json", Accept: "application/json" },
-    body: JSON.stringify({ query, variables: { genres, notIn: excludeIds, page } }),
+    body: JSON.stringify({
+      query,
+      variables: { genres, notIn: excludeIds, page },
+    }),
   });
   const json = await res.json();
   return json.data?.Page?.media || [];
@@ -95,51 +98,69 @@ async function searchByGenres(genres, excludeIds, page = 1) {
 
 export default async function handler(req) {
   if (req.method !== "POST") {
-    return new Response(JSON.stringify({ error: "POST only" }), { status: 405 });
+    return new Response(JSON.stringify({ error: "POST only" }), {
+      status: 405,
+    });
   }
 
   const GEMINI_KEY = process.env.GEMINI_API_KEY;
   if (!GEMINI_KEY) {
-    return new Response(JSON.stringify({ error: "Gemini API key not configured" }), { status: 500 });
+    return new Response(
+      JSON.stringify({ error: "Gemini API key not configured" }),
+      { status: 500 },
+    );
   }
 
   let body;
   try {
     body = await req.json();
   } catch {
-    return new Response(JSON.stringify({ error: "Invalid JSON" }), { status: 400 });
+    return new Response(JSON.stringify({ error: "Invalid JSON" }), {
+      status: 400,
+    });
   }
 
   const { watchedList } = body; // array of strings like ["Attack on Titan", "Fullmetal Alchemist"]
   if (!watchedList || !Array.isArray(watchedList) || watchedList.length === 0) {
-    return new Response(JSON.stringify({ error: "watchedList is required" }), { status: 400 });
+    return new Response(JSON.stringify({ error: "watchedList is required" }), {
+      status: 400,
+    });
   }
 
   try {
     // 1. Fetch metadata for each watched anime from AniList
     const watchedData = await Promise.all(
-      watchedList.slice(0, 10).map((title) => searchAnime(title))
+      watchedList.slice(0, 10).map((title) => searchAnime(title)),
     );
     const validWatched = watchedData.filter(Boolean);
 
     if (validWatched.length === 0) {
-      return new Response(JSON.stringify({ error: "Could not find any of those anime on AniList" }), { status: 400 });
+      return new Response(
+        JSON.stringify({
+          error: "Could not find any of those anime on AniList",
+        }),
+        { status: 400 },
+      );
     }
 
     // 2. Extract taste profile
     const allGenres = validWatched.flatMap((a) => a.genres || []);
     const genreFreq = {};
-    allGenres.forEach((g) => { genreFreq[g] = (genreFreq[g] || 0) + 1; });
+    allGenres.forEach((g) => {
+      genreFreq[g] = (genreFreq[g] || 0) + 1;
+    });
     const topGenres = Object.entries(genreFreq)
       .sort((a, b) => b[1] - a[1])
       .slice(0, 4)
       .map(([g]) => g);
 
     const allTags = validWatched.flatMap((a) =>
-      (a.tags || []).filter((t) => t.rank > 60).map((t) => t.name)
+      (a.tags || []).filter((t) => t.rank > 60).map((t) => t.name),
     );
     const tagFreq = {};
-    allTags.forEach((t) => { tagFreq[t] = (tagFreq[t] || 0) + 1; });
+    allTags.forEach((t) => {
+      tagFreq[t] = (tagFreq[t] || 0) + 1;
+    });
     const topTags = Object.entries(tagFreq)
       .sort((a, b) => b[1] - a[1])
       .slice(0, 6)
@@ -152,12 +173,18 @@ export default async function handler(req) {
 
     // 4. Ask Gemini to pick best 6 with reasoning
     const watchedSummary = validWatched
-      .map((a) => `- ${a.title.english || a.title.romaji} (genres: ${a.genres?.join(", ")}, score: ${a.averageScore})`)
+      .map(
+        (a) =>
+          `- ${a.title.english || a.title.romaji} (genres: ${a.genres?.join(", ")}, score: ${a.averageScore})`,
+      )
       .join("\n");
 
     const candidateSummary = candidates
       .slice(0, 20)
-      .map((a) => `ID:${a.id} "${a.title.english || a.title.romaji}" genres:[${a.genres?.join(",")}] score:${a.averageScore}`)
+      .map(
+        (a) =>
+          `ID:${a.id} "${a.title.english || a.title.romaji}" genres:[${a.genres?.join(",")}] score:${a.averageScore}`,
+      )
       .join("\n");
 
     const prompt = `You are an expert anime recommendation engine.
@@ -187,11 +214,12 @@ Respond ONLY with valid JSON array, no markdown, no preamble:
           contents: [{ parts: [{ text: prompt }] }],
           generationConfig: { temperature: 0.7, maxOutputTokens: 1024 },
         }),
-      }
+      },
     );
 
     const geminiData = await geminiRes.json();
-    const rawText = geminiData.candidates?.[0]?.content?.parts?.[0]?.text || "[]";
+    const rawText =
+      geminiData.candidates?.[0]?.content?.parts?.[0]?.text || "[]";
     const clean = rawText.replace(/```json|```/g, "").trim();
     let picks;
     try {
@@ -203,7 +231,9 @@ Respond ONLY with valid JSON array, no markdown, no preamble:
     // 5. Hydrate picks with full AniList data
     const recommendations = await Promise.all(
       picks.slice(0, 6).map(async (pick) => {
-        const anime = candidates.find((c) => c.id === pick.id) || (await fetchAnimeById(pick.id));
+        const anime =
+          candidates.find((c) => c.id === pick.id) ||
+          (await fetchAnimeById(pick.id));
         if (!anime) return null;
         return {
           id: anime.id,
@@ -220,21 +250,35 @@ Respond ONLY with valid JSON array, no markdown, no preamble:
           siteUrl: anime.siteUrl,
           reason: pick.reason,
         };
-      })
+      }),
     );
 
     const profile = {
       topGenres,
       topTags: topTags.slice(0, 4),
       watchedCount: validWatched.length,
-      avgScore: Math.round(validWatched.reduce((s, a) => s + (a.averageScore || 0), 0) / validWatched.length),
+      avgScore: Math.round(
+        validWatched.reduce((s, a) => s + (a.averageScore || 0), 0) /
+          validWatched.length,
+      ),
     };
 
     return new Response(
-      JSON.stringify({ recommendations: recommendations.filter(Boolean), profile }),
-      { status: 200, headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" } }
+      JSON.stringify({
+        recommendations: recommendations.filter(Boolean),
+        profile,
+      }),
+      {
+        status: 200,
+        headers: {
+          "Content-Type": "application/json",
+          "Access-Control-Allow-Origin": "*",
+        },
+      },
     );
   } catch (err) {
-    return new Response(JSON.stringify({ error: err.message }), { status: 500 });
+    return new Response(JSON.stringify({ error: err.message }), {
+      status: 500,
+    });
   }
 }
