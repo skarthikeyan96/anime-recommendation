@@ -206,7 +206,7 @@ Respond ONLY with valid JSON array, no markdown, no preamble:
 ]`;
 
     const geminiRes = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-04-17:generateContent?key=${GEMINI_KEY}`,
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${GEMINI_KEY}`,
       {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -218,8 +218,9 @@ Respond ONLY with valid JSON array, no markdown, no preamble:
     );
 
     const geminiData = await geminiRes.json();
-    const rawText =
-      geminiData.candidates?.[0]?.content?.parts?.[0]?.text || "[]";
+    const parts = geminiData.candidates?.[0]?.content?.parts || [];
+    const responsePart = parts.filter((p) => !p.thought).pop();
+    const rawText = responsePart?.text || "[]";
     const clean = rawText.replace(/```json|```/g, "").trim();
     let picks;
     try {
