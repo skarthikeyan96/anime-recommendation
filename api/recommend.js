@@ -9,6 +9,7 @@ async function searchAnime(title) {
       Media(search: $search, type: ANIME) {
         id
         title { romaji english }
+        format
         genres
         tags { name rank }
         averageScore
@@ -39,6 +40,7 @@ async function fetchAnimeById(id) {
       Media(id: $id, type: ANIME) {
         id
         title { romaji english }
+        format
         genres
         averageScore
         popularity
@@ -70,6 +72,7 @@ async function searchByGenres(genres, excludeIds, page = 1) {
         media(type: ANIME, genre_in: $genres, id_not_in: $notIn, sort: SCORE_DESC, status: FINISHED) {
           id
           title { romaji english }
+          format
           genres
           averageScore
           popularity
@@ -187,6 +190,7 @@ export default async function handler(req) {
       )
       .join("\n");
 
+    const watchedTitles = validWatched.map((a) => a.title.english || a.title.romaji);
     const prompt = `You are an expert anime recommendation engine.
 
 The user has watched these anime:
@@ -195,6 +199,11 @@ ${watchedSummary}
 Their taste profile: top genres are [${topGenres.join(", ")}], key themes include [${topTags.join(", ")}].
 
 From this candidate list, pick exactly 6 anime they would love most. For each, give a punchy 1-sentence reason that references something specific from what they watched.
+
+IMPORTANT RULES:
+- NEVER recommend any anime the user has already watched: ${watchedTitles.join(", ")}
+- Avoid extremely mainstream titles (like Naruto, One Piece, Attack on Titan, Dragon Ball, Death Note, Demon Slayer) UNLESS they are a very strong thematic match — assume the user already knows about them.
+- Prefer hidden gems, underrated picks, or strong thematic matches over popularity alone.
 
 Candidates:
 ${candidateSummary}
@@ -250,6 +259,7 @@ Respond ONLY with valid JSON array, no markdown, no preamble:
           title: anime.title.english || anime.title.romaji,
           titleJp: anime.title.romaji,
           cover: anime.coverImage?.large,
+          format: anime.format,
           genres: anime.genres?.slice(0, 3),
           score: anime.averageScore,
           episodes: anime.episodes,

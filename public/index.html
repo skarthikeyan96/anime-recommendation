@@ -917,7 +917,8 @@
     const grid = document.getElementById('cards-grid');
     grid.innerHTML = recommendations.map((r, i) => {
       const score = r.score ? `★ ${(r.score/10).toFixed(1)}` : '';
-      const eps = r.episodes ? `${r.episodes} eps` : '';
+      const formatLabels = { MOVIE: 'Movie', OVA: 'OVA', ONA: 'ONA', SPECIAL: 'Special' };
+      const eps = formatLabels[r.format] || (r.episodes ? `${r.episodes} eps` : '');
       const year = r.year || '';
       const genres = (r.genres || []).map(g => `<span class="card-genre">${escHtml(g)}</span>`).join('');
       const coverFallback = `https://via.placeholder.com/100x150/14141f/7c3aed?text=${encodeURIComponent(r.title.slice(0,3))}`;
